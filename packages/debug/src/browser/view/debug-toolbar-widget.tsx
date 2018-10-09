@@ -14,80 +14,64 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 
-import { inject, postConstruct } from 'inversify';
+import { inject, postConstruct, injectable } from 'inversify';
 import * as React from 'react';
-import * as ReactDOM from 'react-dom';
-import { Message } from '@phosphor/messaging';
-import { CommandRegistry } from '@theia/core/lib/common';
-import { DebugSession } from '../debug-model';
-import { DEBUG_COMMANDS } from '../debug-command';
-import { BaseWidget } from '@theia/core/lib/browser/widgets';
 import { Disposable } from '@theia/core';
-import { DebugSessionManager } from '../debug-session';
+import { ReactWidget } from '@theia/core/lib/browser/widgets';
+import { DebugState } from '../debug-session';
+import { DebugSessionManager } from '../debug-session-manager';
+import { DebugAction } from './debug-action';
 
 /**
  * Debug toolbar.
  */
-export class DebugToolBar extends BaseWidget {
-    protected toolbarContainer: HTMLElement;
+@injectable()
+export class DebugToolBar extends ReactWidget {
 
-    constructor(
-        @inject(DebugSession) protected readonly debugSession: DebugSession,
-        @inject(DebugSessionManager) protected readonly debugSessionManager: DebugSessionManager,
-        @inject(CommandRegistry) protected readonly commandRegistry: CommandRegistry) {
-        super();
-
-        this.id = this.createId();
-        this.addClass('debug-toolbar');
-    }
+    @inject(DebugSessionManager)
+    protected readonly manager: DebugSessionManager;
 
     @postConstruct()
-    protected init() {
-        this.toolbarContainer = document.createElement('div');
-        this.node.appendChild(this.toolbarContainer);
-
-        const eventListener = () => this.update();
-
-        this.debugSession.on('*', eventListener);
-        this.toDispose.push(Disposable.create(() => this.debugSession.removeListener('*', eventListener)));
-
-        this.toDispose.push(this.debugSessionManager.onDidDestroyDebugSession((debugSession: DebugSession) => this.onDebugSessionDestroyed(debugSession)));
+    protected init(): void {
+        this.id = 'debug:toolbar';
+        this.addClass('debug-toolbar');
+        this.update();
     }
 
-    protected onDebugSessionDestroyed(debugSession: DebugSession) {
-        if (debugSession.sessionId === this.debugSession.sessionId) {
+    focus(): void {
+        if (!this.doFocus()) {
+            this.onRender.push(Disposable.create(() => this.doFocus()));
             this.update();
         }
     }
-
-    protected onUpdateRequest(msg: Message) {
-        super.onUpdateRequest(msg);
-        ReactDOM.render(<React.Fragment>{this.render()}</React.Fragment>, this.toolbarContainer);
+    protected doFocus(): boolean {
+        if (!this.stepRef) {
+            return false;
+        }
+        this.stepRef.focus();
+        return true;
     }
+    protected stepRef: DebugAction | undefined;
+    protected setStepRef = (stepRef: DebugAction | null) => this.stepRef = stepRef || undefined;
 
     protected render(): React.ReactNode {
-        const stopButton = this.renderButton(DEBUG_COMMANDS.STOP.id);
-        const resumeAllButton = this.renderButton(DEBUG_COMMANDS.RESUME_ALL_THREADS.id);
-        const suspendAllButton = this.renderButton(DEBUG_COMMANDS.SUSPEND_ALL_THREADS.id);
-        const stepOverButton = this.renderButton(DEBUG_COMMANDS.STEP.id);
-        const stepIntoButton = this.renderButton(DEBUG_COMMANDS.STEPIN.id);
-        const stepOutButton = this.renderButton(DEBUG_COMMANDS.STEPOUT.id);
-        return <div className='button-container'>{stopButton}{resumeAllButton}{suspendAllButton}{stepOverButton}{stepIntoButton}{stepOutButton}</div>;
+        const { state } = this.manager;
+        return <React.Fragment>
+            <DebugAction enabled={state !== DebugState.Inactive} run={this.stop} label='Stop' iconClass='stop' />
+            <DebugAction enabled={state === DebugState.Stopped} run={this.continue} label='Resume' iconClass='play-circle' />
+            <DebugAction enabled={state === DebugState.Running} run={this.pause} label='Suspend' iconClass='pause' />
+            <DebugAction enabled={state === DebugState.Stopped} run={this.step} label='Step' iconClass='arrow-right' ref={this.setStepRef} />
+            <DebugAction enabled={state === DebugState.Stopped} run={this.stepIn} label='Step In' iconClass='arrow-down' />
+            <DebugAction enabled={state === DebugState.Stopped} run={this.stepOut} label='Step Out' iconClass='arrow-up' />
+        </React.Fragment>;
     }
 
-    protected renderButton(commandId: string): React.ReactNode {
-        const command = this.commandRegistry.getCommand(commandId);
-        if (!command) {
-            return '';
-        }
+    protected stop = () => this.manager.currentSession && this.manager.currentSession.disconnect();
+    protected continue = () => this.manager.currentThread && this.manager.currentThread.continue();
+    protected pause = () => this.manager.currentThread && this.manager.currentThread.pause();
+    protected step = () => this.manager.currentThread && this.manager.currentThread.next();
+    protected stepIn = () => this.manager.currentThread && this.manager.currentThread.stepIn();
+    protected stepOut = () => this.manager.currentThread && this.manager.currentThread.stepOut();
 
-        const enabled = this.commandRegistry.isEnabled(commandId) ? 'enabled' : '';
-        const clickHandler = () => this.commandRegistry.executeCommand(commandId);
 
-        return <span className={`btn ${enabled} ${command.iconClass}`} title={`${command.label}`} onClick={clickHandler}></span>;
-    }
-
-    private createId(): string {
-        return `debug-toolbar-${this.debugSession.sessionId}`;
-    }
 }

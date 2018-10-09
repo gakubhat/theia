@@ -15,13 +15,23 @@
  ********************************************************************************/
 
 import * as React from 'react';
-import { injectable } from 'inversify';
+import { injectable, postConstruct } from 'inversify';
 import { TreeWidget, TreeNode } from '@theia/core/lib/browser';
 import { ConsoleItemNode } from './console-content-tree';
 import { ConsoleItem } from '../console-session';
 
 @injectable()
 export class ConsoleContentWidget extends TreeWidget {
+
+    @postConstruct()
+    protected init(): void {
+        super.init();
+        this.toDispose.push(this.model.onOpenNode(node => {
+            if (ConsoleItemNode.is(node) && node.item.open) {
+                node.item.open();
+            }
+        }));
+    }
 
     protected renderCaption(node: TreeNode): React.ReactNode {
         return ConsoleItemNode.is(node) && <div className={ConsoleItem.toClassName(node.item)}

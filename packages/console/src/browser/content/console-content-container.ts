@@ -27,17 +27,20 @@ export const CONSOLE_TREE_PROPS: TreeProps = {
     contextMenuPath: CONSOLE_CONTEXT_MENU
 };
 
-export function createConsoleContentContainer(parent: interfaces.Container): Container {
+export function createConsoleContentContainer(parent: interfaces.Container, props?: Partial<TreeProps>): Container {
     const child = createTreeContainer(parent);
 
     child.unbind(TreeImpl);
     child.bind(ConsoleContentTree).toSelf();
-    child.rebind(Tree).toDynamicValue(ctx => ctx.container.get(ConsoleContentTree));
+    child.rebind(Tree).toService(ConsoleContentTree);
 
     child.unbind(TreeWidget);
     child.bind(ConsoleContentWidget).toSelf();
 
-    child.rebind(TreeProps).toConstantValue(CONSOLE_TREE_PROPS);
+    child.rebind(TreeProps).toConstantValue({
+        ...CONSOLE_TREE_PROPS,
+        ...props
+    });
 
     return child;
 }

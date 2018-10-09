@@ -20,9 +20,11 @@ import { MaybePromise } from '@theia/core/lib/common/types';
 import { MessageType } from '@theia/core/lib/common/message-service-protocol';
 
 export interface ConsoleItem {
+    readonly id?: string | undefined
     readonly severity?: MessageType
-    readonly empty: boolean
+    readonly empty?: boolean
     render(): ReactNode
+    open?(): MaybePromise<void>
 }
 export namespace ConsoleItem {
     export const errorClassName = 'theia-console-error';

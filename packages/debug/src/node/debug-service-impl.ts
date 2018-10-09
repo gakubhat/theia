@@ -20,7 +20,7 @@ import {
     DebugService,
     DebugConfiguration,
     DebugAdapterPath
-} from '../common/debug-common';
+} from '../common/debug-service';
 
 import { UUID } from '@phosphor/coreutils';
 import { DebugAdapterContribution, DebugAdapterExecutable, DebugAdapterSession, DebugAdapterSessionFactory, DebugAdapterFactory } from './debug-model';

@@ -23,9 +23,9 @@ import { WorkspaceService } from '@theia/workspace/lib/browser';
 import { FileSystem } from '@theia/filesystem/lib/common';
 import { OpenFileDialogFactory, DirNode } from '@theia/filesystem/lib/browser';
 import { HostedPluginServer } from '../../common/plugin-protocol';
-import { DebugService, DebugConfiguration } from '@theia/debug/lib/common/debug-common';
+import { DebugService, DebugConfiguration } from '@theia/debug/lib/common/debug-service';
 import { DebugConfiguration as HostedDebugConfig } from '../../common';
-import { DebugSessionManager } from '@theia/debug/lib/browser/debug-session';
+import { DebugSessionManager } from '@theia/debug/lib/browser/debug-session-manager';
 import { HostedPluginPreferences } from './hosted-plugin-preferences';
 
 /**

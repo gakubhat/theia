@@ -36,11 +36,11 @@ export class ConsoleContentTree extends TreeImpl {
         if (ConsoleSessionNode.is(parent)) {
             return parent.session.items;
         }
-        return await parent.item.resolve();
+        return parent.item.resolve();
     }
 
     protected toNode(item: ConsoleItem, index: number, parent: ConsoleItemNodeParent): ConsoleItemNode {
-        const id = parent.id + ':' + index;
+        const id = item.id || (parent.id + ':' + index);
         const name = id;
         const existing = this.getNode(id);
         const updated = existing && <ConsoleItemNode>Object.assign(existing, { item, parent });
@@ -61,6 +61,8 @@ export class ConsoleContentTree extends TreeImpl {
         if (CompositeConsoleItemNode.is(updated)) {
             delete updated.expanded;
             delete updated.children;
+        }
+        if (updated) {
             return updated;
         }
         return {

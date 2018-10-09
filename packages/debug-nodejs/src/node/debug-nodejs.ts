@@ -19,7 +19,7 @@ const packageJson = require('../../package.json');
 const debugAdapterDir = packageJson['debugAdapter']['dir'] + '/extension';
 
 import { injectable } from 'inversify';
-import { DebugConfiguration } from '@theia/debug/lib/common/debug-common';
+import { DebugConfiguration } from '@theia/debug/lib/common/debug-service';
 import { DebugAdapterContribution, DebugAdapterExecutable } from '@theia/debug/lib/node/debug-model';
 import { IJSONSchema } from '@theia/core/lib/common/json-schema';
 import { getSchemaAttributes } from './package-json-parser';
