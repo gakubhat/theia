@@ -59,28 +59,16 @@ export class PreferenceSchemaProvider extends PreferenceProvider {
 
     protected readonly combinedSchema: PreferenceSchema = { properties: {} };
     protected readonly preferences: { [name: string]: any } = {};
-    protected readonly validateFunction: Ajv.ValidateFunction;
+    protected validateFunction: Ajv.ValidateFunction;
 
     constructor(
         @inject(ContributionProvider) @named(PreferenceContribution)
         protected readonly preferenceContributions: ContributionProvider<PreferenceContribution>
     ) {
         super();
-        const schema = this.combinedSchema;
         this.preferenceContributions.getContributions().forEach(contrib => {
-            for (const property in contrib.schema.properties) {
-                if (schema.properties[property]) {
-                    console.error('Preference name collision detected in the schema for property: ' + property);
-                } else {
-                    schema.properties[property] = contrib.schema.properties[property];
-                }
-            }
+            this.setSchema(contrib.schema);
         });
-        this.validateFunction = new Ajv().compile(schema);
-        // tslint:disable-next-line:forin
-        for (const property in schema.properties) {
-            this.preferences[property] = schema.properties[property].default;
-        }
         this._ready.resolve();
     }
 
@@ -94,6 +82,23 @@ export class PreferenceSchemaProvider extends PreferenceProvider {
 
     getPreferences(): { [name: string]: any } {
         return this.preferences;
+    }
+
+    setSchema(schema: PreferenceSchema): void {
+        const props: string[] = [];
+        for (const property in schema.properties) {
+            if (this.combinedSchema.properties[property]) {
+                console.error('Preference name collision detected in the schema for property: ' + property);
+            } else {
+                this.combinedSchema.properties[property] = schema.properties[property];
+                props.push(property);
+            }
+        }
+        this.validateFunction = new Ajv().compile(this.combinedSchema);
+        // tslint:disable-next-line:forin
+        for (const property of props) {
+            this.preferences[property] = this.combinedSchema.properties[property].default;
+        }
     }
 
     async setPreference(): Promise<void> {
